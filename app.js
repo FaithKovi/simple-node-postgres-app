@@ -12,6 +12,8 @@ const pool = new Pool();
 async function setupDatabase() {
   const client = await pool.connect();
   try {
+    console.log('[Database] Setting up database and inserting sample data...');
+    
     await client.query(`
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
@@ -19,6 +21,7 @@ async function setupDatabase() {
         email VARCHAR(100) UNIQUE NOT NULL
       );
     `);
+    console.log('[Database] Table "users" ensured.');
 
     await client.query(`
       INSERT INTO users (name, email)
@@ -28,10 +31,10 @@ async function setupDatabase() {
         ('Charlie', 'charlie@example.com')
       ON CONFLICT (email) DO NOTHING;
     `);
+    console.log('[Database] Sample user data inserted (if not already present).');
 
-    console.log('Database is set up and sample data inserted.');
   } catch (err) {
-    console.error('Error setting up database:', err);
+    console.error('[Database] Error during setup:', err);
   } finally {
     client.release();
   }
@@ -39,17 +42,20 @@ async function setupDatabase() {
 
 // Root route to show users
 app.get('/', async (req, res) => {
+  console.log('[Route: GET /] Fetching users from database...');
   try {
     const result = await pool.query('SELECT * FROM users;');
+    console.log(`[Route: GET /] Retrieved ${result.rowCount} users.`);
     res.json(result.rows);
   } catch (err) {
-    console.error(err);
+    console.error('[Route: GET /] Error fetching users:', err);
     res.status(500).send('Error fetching users');
   }
 });
 
 // Start app
 app.listen(port, async () => {
+  console.log(`[App] Starting server on port ${port}...`);
   await setupDatabase();
-  console.log(`App running on http://localhost:${port}`);
+  console.log(`[App] Server is running at http://localhost:${port}`);
 });
